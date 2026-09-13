@@ -9,45 +9,79 @@ import (
 	"github.com/bjarneo/cliamp/ui"
 )
 
-func TestTrackTrailer(t *testing.T) {
-	dated := playlist.Track{DurationSecs: 3768, ProviderMeta: map[string]string{provider.MetaPodcastPublished: "2026-09-10"}}
+func dated(title, date string) playlist.Track {
+	return playlist.Track{Path: "/" + title, Title: title, DurationSecs: 60,
+		ProviderMeta: map[string]string{provider.MetaPodcastPublished: date}}
+}
+
+func TestEpisodeDateColumn(t *testing.T) {
 	tests := []struct {
-		name  string
-		width int
-		track playlist.Track
-		want  string
+		name   string
+		on     bool
+		width  int
+		tracks []playlist.Track
+		want   bool
 	}{
-		{"date and duration", 80, dated, "2026-09-10  1:02:48"},
-		{"no date", 80, playlist.Track{DurationSecs: 3768}, "1:02:48"},
-		{"date without duration", 80, playlist.Track{ProviderMeta: map[string]string{provider.MetaPodcastPublished: "2026-09-10"}}, "2026-09-10"},
-		{"too narrow for the date", 60, dated, "1:02:48"},
-		{"nothing", 80, playlist.Track{}, ""},
+		{"on, wide, dated", true, 80, []playlist.Track{dated("a", "2026-09-12")}, true},
+		{"off", false, 80, []playlist.Track{dated("a", "2026-09-12")}, false},
+		{"too narrow", true, 60, []playlist.Track{dated("a", "2026-09-12")}, false},
+		{"nothing dated", true, 80, []playlist.Track{{Path: "/radio", Title: "Radio"}}, false},
+		{"one dated among many", true, 80, []playlist.Track{{Path: "/radio"}, dated("a", "2026-09-12")}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			old := ui.PanelWidth
 			ui.PanelWidth = tt.width
 			t.Cleanup(func() { ui.PanelWidth = old })
-			if got := trackTrailer(tt.track); got != tt.want {
-				t.Errorf("trackTrailer() = %q, want %q", got, tt.want)
+			m := Model{showEpisodeDates: tt.on}
+			if got := m.episodeDateColumn(tt.tracks); got != tt.want {
+				t.Errorf("episodeDateColumn() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-// The queue view shares the trailer, so a dated episode shows its date there too.
-func TestRenderQueueBodyShowsEpisodeDate(t *testing.T) {
+// Undated rows get a blank cell of the same width, so titles line up.
+func TestEpisodeDateCellKeepsAlignment(t *testing.T) {
+	with := stripAnsi(episodeDateCell(dated("a", "2026-09-12")))
+	without := episodeDateCell(playlist.Track{})
+	if len(with) != len(without) {
+		t.Errorf("cell widths differ: %q (%d) vs %q (%d)", with, len(with), without, len(without))
+	}
+	if !strings.HasPrefix(with, "2026-09-12") {
+		t.Errorf("dated cell = %q, want the date first", with)
+	}
+}
+
+func TestRenderQueueBodyShowsEpisodeDateBeforeTitle(t *testing.T) {
 	old := ui.PanelWidth
 	ui.PanelWidth = 80
 	t.Cleanup(func() { ui.PanelWidth = old })
-	m := &Model{playlist: playlist.New(), plVisible: 5}
-	m.playlist.Replace([]playlist.Track{{
-		Path: "/a.mp3", Title: "Dated", DurationSecs: 60,
-		ProviderMeta: map[string]string{provider.MetaPodcastPublished: "2026-09-10"},
-	}})
+	m := &Model{playlist: playlist.New(), plVisible: 5, showEpisodeDates: true}
+	m.playlist.Replace([]playlist.Track{dated("Dated", "2026-09-10")})
 	m.playlist.Queue(0)
 
-	if body := stripAnsi(m.renderQueueBody()); !strings.Contains(body, "2026-09-10  1:00") {
-		t.Errorf("queue body = %q, want the date before the duration", body)
+	body := stripAnsi(m.renderQueueBody())
+
+	if !strings.Contains(body, "1. 2026-09-10  Dated") {
+		t.Errorf("queue body = %q, want the date between the number and the title", body)
+	}
+}
+
+func TestToggleEpisodeDatesPersists(t *testing.T) {
+	saver := &recordingSaver{}
+	m := &Model{showEpisodeDates: true, configSaver: saver}
+
+	m.toggleEpisodeDates()
+
+	if m.showEpisodeDates {
+		t.Error("toggle did not turn the column off")
+	}
+	if got := saver.saved["show_episode_dates"]; got != "false" {
+		t.Errorf("saved = %q, want \"false\"", got)
+	}
+	m.toggleEpisodeDates()
+	if got := saver.saved["show_episode_dates"]; got != "true" {
+		t.Errorf("saved = %q, want \"true\"", got)
 	}
 }

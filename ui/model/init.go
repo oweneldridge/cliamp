@@ -141,6 +141,10 @@ func (m *Model) SetHideSettingsPane(v bool) {
 	m.refreshChrome()
 }
 
+// SetShowEpisodeDates shows or hides the publish-date column before podcast
+// episode titles.
+func (m *Model) SetShowEpisodeDates(v bool) { m.showEpisodeDates = v }
+
 // SetShowMetadata expands the highlighted-track details below Settings.
 func (m *Model) SetShowMetadata(v bool) {
 	m.showMetadata = v

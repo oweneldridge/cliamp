@@ -364,6 +364,7 @@ type Config struct {
 	HideHelpBar      bool                         // hide the key-binding hint bar above the status line
 	HideSettingsPane bool                         // close the settings pane beside the playlist
 	ShowMetadata     bool                         // expand highlighted-track metadata below settings (default false)
+	ShowEpisodeDates bool                         // show a podcast episode's publish date before its title (default true)
 	Expanded         bool                         // start with the playlist expanded (the Ctrl+X state)
 	PaddingH         int                          // horizontal padding for the UI frame (default 3)
 	PaddingV         int                          // vertical padding for the UI frame (default 1)
@@ -398,21 +399,22 @@ type Config struct {
 // that require a specific rate (commonly 48 kHz) work out of the box.
 func defaultConfig() Config {
 	return Config{
-		VolumeMin:       -50,
-		VisVolumeLinked: true,
-		Repeat:          "off",
-		AutoPlay:        false,
-		Speed:           1.0,
-		SeekStepLarge:   30,
-		SampleRate:      0,
-		BufferMs:        250,
-		ResampleQuality: 4,
-		BitDepth:        16,
-		PaddingH:        3,
-		PaddingV:        1,
-		Spotify:         SpotifyConfig{Bitrate: 320},
-		Qobuz:           QobuzConfig{Quality: 6},
-		LogLevel:        "info",
+		VolumeMin:        -50,
+		VisVolumeLinked:  true,
+		ShowEpisodeDates: true,
+		Repeat:           "off",
+		AutoPlay:         false,
+		Speed:            1.0,
+		SeekStepLarge:    30,
+		SampleRate:       0,
+		BufferMs:         250,
+		ResampleQuality:  4,
+		BitDepth:         16,
+		PaddingH:         3,
+		PaddingV:         1,
+		Spotify:          SpotifyConfig{Bitrate: 320},
+		Qobuz:            QobuzConfig{Quality: 6},
+		LogLevel:         "info",
 	}
 }
 
@@ -748,6 +750,8 @@ func Load() (Config, error) {
 				cfg.HideSettingsPane = val == "true"
 			case "show_metadata":
 				cfg.ShowMetadata = val == "true"
+			case "show_episode_dates":
+				cfg.ShowEpisodeDates = val == "true"
 			case "expanded":
 				cfg.Expanded = strings.ToLower(val) == "true"
 			case "audio_device":

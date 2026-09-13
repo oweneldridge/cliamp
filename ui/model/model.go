@@ -497,9 +497,12 @@ type Model struct {
 	simplified      bool // simplified playback view: track summary and time strip
 	hideTrackInfo   bool // full-screen visualizer: show the source instead of the track
 	hideHelpBar     bool // hide the key-binding hint bar above the status line
-	hideSettings    bool // close the two-column settings pane beside the playlist
-	showMetadata    bool // expand highlighted-track metadata below settings
-	heightExpanded  bool // tracks whether manual 'x' expansion is active
+	// showEpisodeDates puts a podcast episode's publish date before its title,
+	// so a list drawn from several shows says which episode is newer.
+	showEpisodeDates bool
+	hideSettings     bool // close the two-column settings pane beside the playlist
+	showMetadata     bool // expand highlighted-track metadata below settings
+	heightExpanded   bool // tracks whether manual 'x' expansion is active
 
 	// Cached per-tick to avoid repeated speaker.Lock() calls in View().
 	cachedPos  time.Duration

@@ -1057,6 +1057,7 @@ func (m Model) renderPlaylist() string {
 	if cols.played {
 		stateReporters = m.playbackStateReporters()
 	}
+	dateColumn := m.episodeDateColumn(tracks)
 
 	for row := range m.playlistRows(tracks, localScroll, m.showAlbumHeaders) {
 		if row.Index < 0 {
@@ -1151,14 +1152,18 @@ func (m Model) renderPlaylist() string {
 			queueSuffix = fmt.Sprintf(" [Q%d]", queuePosition)
 		}
 		queueLen := lipgloss.Width(queueSuffix)
-		duration := trackTrailer(t)
+		duration := formatTrackTime(t.DurationSecs)
 		durationLen := lipgloss.Width(duration)
 		durationGap := 0
 		if duration != "" {
 			durationGap = durationLen + 1
 		}
 
-		linePrefixWidth := lipgloss.Width(markers) + numWidth + 2 // 2 for ". "
+		dateCell := ""
+		if dateColumn {
+			dateCell = episodeDateCell(t)
+		}
+		linePrefixWidth := lipgloss.Width(markers) + numWidth + 2 + lipgloss.Width(dateCell) // 2 for ". "
 
 		// State markers always occupy the same cells; low-priority queue position,
 		// album, and unavailable labels appear only when the terminal has room.
@@ -1179,7 +1184,7 @@ func (m Model) renderPlaylist() string {
 		}
 
 		numStr := fmt.Sprintf("%*d. ", numWidth, i+1)
-		line := styledMarkers + style.Render(numStr)
+		line := styledMarkers + style.Render(numStr) + dateCell
 		line += style.Render(name)
 		if albumSuffix != "" {
 			line += dimStyle.Render(albumSuffix)

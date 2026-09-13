@@ -391,6 +391,8 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 			if !m.openSubsOverlay() && m.luaMgr != nil {
 				m.luaMgr.EmitKey(msg.String())
 			}
+		case "ctrl+t":
+			m.toggleEpisodeDates()
 		case "l":
 			return m.loadLatestFromProviderList()
 		case "a":
@@ -955,6 +957,9 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "ctrl+g":
 		m.toggleHelpBar()
 		m.adjustScroll()
+
+	case "ctrl+t":
+		m.toggleEpisodeDates()
 
 	case "ctrl+b":
 		m.toggleSettingsPane()

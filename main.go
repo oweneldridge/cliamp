@@ -588,6 +588,7 @@ func run(overrides config.Overrides, positional []string, daemon, visualizer60FP
 	if cfg.HideSettingsPane {
 		m.SetHideSettingsPane(true)
 	}
+	m.SetShowEpisodeDates(cfg.ShowEpisodeDates)
 	if cfg.ShowMetadata {
 		m.SetShowMetadata(true)
 	}

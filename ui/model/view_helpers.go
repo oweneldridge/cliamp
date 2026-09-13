@@ -47,23 +47,43 @@ func (m Model) formatListMatchCount(matches, total int) string {
 }
 
 // episodeDateMinWidth is the narrowest pane that shows the publish date
-// beside the duration; below it the column would eat the title.
+// before the title; below it the column would eat the title.
 const episodeDateMinWidth = 72
 
-// trackTrailer builds the right-aligned text after a track's title: the
-// episode's publish date when it has one and the pane is wide enough, then
-// the duration. Podcast titles rarely say when an episode came out, and a
-// list built from several shows has no other way to show which is newer.
-func trackTrailer(t playlist.Track) string {
-	duration := formatTrackTime(t.DurationSecs)
+// episodeDateWidth is the column's width: an ISO date and two spaces.
+const episodeDateWidth = len("2026-09-12") + 2
+
+// episodeDateColumn reports whether a render pass reserves the publish-date
+// column: the setting is on, the pane is wide enough, and at least one of
+// the tracks being drawn has a date. A list of radio stations gives the
+// columns back to the titles.
+func (m Model) episodeDateColumn(tracks []playlist.Track) bool {
+	if !m.showEpisodeDates || ui.PanelWidth < episodeDateMinWidth {
+		return false
+	}
+	for _, t := range tracks {
+		if t.Meta(provider.MetaPodcastPublished) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// episodeDateCell renders a track's publish date padded to the column, or a
+// blank cell of the same width so titles stay aligned across a mixed list.
+func episodeDateCell(t playlist.Track) string {
 	date := t.Meta(provider.MetaPodcastPublished)
-	if date == "" || ui.PanelWidth < episodeDateMinWidth {
-		return duration
+	if date == "" {
+		return strings.Repeat(" ", episodeDateWidth)
 	}
-	if duration == "" {
-		return date
-	}
-	return date + "  " + duration
+	return dimStyle.Render(date) + "  "
+}
+
+// toggleEpisodeDates shows or hides the publish-date column and persists the
+// choice to the show_episode_dates config key.
+func (m *Model) toggleEpisodeDates() {
+	m.SetShowEpisodeDates(!m.showEpisodeDates)
+	m.saveConfigKey("show_episode_dates", fmt.Sprintf("%v", m.showEpisodeDates))
 }
 
 // formatTrackTime formats a duration in seconds as M:SS or H:MM:SS for tracks.

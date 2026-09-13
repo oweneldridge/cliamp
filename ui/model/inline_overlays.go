@@ -305,6 +305,7 @@ func (m Model) renderQueueBody() string {
 	windowStart := max(0, scroll-1)
 	tracks := m.playlist.QueueWindow(windowStart, 2*budget+2)
 	localScroll, localCursor := scroll-windowStart, m.queue.cursor-windowStart
+	dateColumn := m.episodeDateColumn(tracks)
 	// clampedScroll counts tracks, but album headers take rows too. Advance
 	// past headers until the rows from scroll through the cursor fit.
 	for localScroll < localCursor && m.albumSeparatorRows(tracks, localScroll, localCursor, m.showAlbumHeaders) > budget {
@@ -324,14 +325,14 @@ func (m Model) renderQueueBody() string {
 			}
 			continue
 		}
-		lines = append(lines, m.queueRow(row.Track, windowStart+row.Index, numWidth, stateReporters))
+		lines = append(lines, m.queueRow(row.Track, windowStart+row.Index, numWidth, dateColumn, stateReporters))
 	}
 	return strings.Join(padLines(lines, budget, len(lines)), "\n")
 }
 
 // queueRow renders one queued track: cursor, played marker, position, title,
 // and a right-aligned duration.
-func (m Model) queueRow(t playlist.Track, idx, numWidth int, reporters []provider.PlaybackStateReporter) string {
+func (m Model) queueRow(t playlist.Track, idx, numWidth int, dateColumn bool, reporters []provider.PlaybackStateReporter) string {
 	style := playlistItemStyle
 	selected := idx == m.queue.cursor
 	if selected {
@@ -362,15 +363,19 @@ func (m Model) queueRow(t playlist.Track, idx, numWidth int, reporters []provide
 	markers := cursorMarker + stateMarker + " "
 	styled := dimStyle.Render(cursorMarker) + stateStyle.Render(stateMarker) + " "
 
-	duration := trackTrailer(t)
+	duration := formatTrackTime(t.DurationSecs)
 	durationGap := 0
 	if duration != "" {
 		durationGap = lipgloss.Width(duration) + 1
 	}
-	prefixWidth := lipgloss.Width(markers) + numWidth + 2 // 2 for ". "
+	dateCell := ""
+	if dateColumn {
+		dateCell = episodeDateCell(t)
+	}
+	prefixWidth := lipgloss.Width(markers) + numWidth + 2 + lipgloss.Width(dateCell) // 2 for ". "
 	name := truncate(trackViewName(t), ui.PanelWidth-prefixWidth-durationGap)
 
-	line := styled + style.Render(fmt.Sprintf("%*d. ", numWidth, idx+1)) + style.Render(name)
+	line := styled + style.Render(fmt.Sprintf("%*d. ", numWidth, idx+1)) + dateCell + style.Render(name)
 	if duration != "" {
 		padding := max(1, ui.PanelWidth-lipgloss.Width(line)-lipgloss.Width(duration))
 		line += strings.Repeat(" ", padding) + dimStyle.Render(duration)
