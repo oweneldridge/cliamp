@@ -79,3 +79,22 @@ func TestPlaylistRoundTripIgnoresAGuidWithoutAFeed(t *testing.T) {
 		t.Errorf("guid = %q, want it dropped without a feed", got)
 	}
 }
+
+func TestPlaylistRoundTripKeepsPublishDate(t *testing.T) {
+	p := newTestProvider(t)
+	episode := playlist.Track{
+		Path:  "https://cdn.example.com/ep1.mp3",
+		Title: "Dated",
+		ProviderMeta: map[string]string{
+			provider.MetaPodcastFeed:      "https://example.com/feed",
+			provider.MetaPodcastPublished: "2026-09-10",
+		},
+	}
+	if _, _, err := p.AddTracks("saved", []playlist.Track{episode}); err != nil {
+		t.Fatalf("AddTracks: %v", err)
+	}
+	tracks, _ := p.Tracks("saved")
+	if got := tracks[0].Meta(provider.MetaPodcastPublished); got != "2026-09-10" {
+		t.Errorf("published = %q, want 2026-09-10", got)
+	}
+}

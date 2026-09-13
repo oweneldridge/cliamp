@@ -362,7 +362,7 @@ func (m Model) queueRow(t playlist.Track, idx, numWidth int, reporters []provide
 	markers := cursorMarker + stateMarker + " "
 	styled := dimStyle.Render(cursorMarker) + stateStyle.Render(stateMarker) + " "
 
-	duration := formatTrackTime(t.DurationSecs)
+	duration := trackTrailer(t)
 	durationGap := 0
 	if duration != "" {
 		durationGap = lipgloss.Width(duration) + 1

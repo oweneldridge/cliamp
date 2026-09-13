@@ -46,6 +46,26 @@ func (m Model) formatListMatchCount(matches, total int) string {
 	return fmt.Sprintf("%d matches of %d total", matches, total)
 }
 
+// episodeDateMinWidth is the narrowest pane that shows the publish date
+// beside the duration; below it the column would eat the title.
+const episodeDateMinWidth = 72
+
+// trackTrailer builds the right-aligned text after a track's title: the
+// episode's publish date when it has one and the pane is wide enough, then
+// the duration. Podcast titles rarely say when an episode came out, and a
+// list built from several shows has no other way to show which is newer.
+func trackTrailer(t playlist.Track) string {
+	duration := formatTrackTime(t.DurationSecs)
+	date := t.Meta(provider.MetaPodcastPublished)
+	if date == "" || ui.PanelWidth < episodeDateMinWidth {
+		return duration
+	}
+	if duration == "" {
+		return date
+	}
+	return date + "  " + duration
+}
+
 // formatTrackTime formats a duration in seconds as M:SS or H:MM:SS for tracks.
 // Returns "" when secs is non-positive so callers can skip rendering entirely.
 func formatTrackTime(secs int) string {

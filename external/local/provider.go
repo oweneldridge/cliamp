@@ -1173,6 +1173,9 @@ func writeTrack(w io.Writer, t playlist.Track) {
 	if guid := t.Meta(provider.MetaPodcastGUID); guid != "" {
 		fmt.Fprintf(w, "podcast_guid = %q\n", guid)
 	}
+	if published := t.Meta(provider.MetaPodcastPublished); published != "" {
+		fmt.Fprintf(w, "podcast_published = %q\n", published)
+	}
 	if t.DurationSecs != 0 {
 		fmt.Fprintf(w, "duration_secs = %d\n", t.DurationSecs)
 	}
@@ -1220,6 +1223,9 @@ func parseTrackFields(f map[string]string) playlist.Track {
 		t.ProviderMeta = map[string]string{provider.MetaPodcastFeed: feed}
 		if guid := f["podcast_guid"]; guid != "" {
 			t.ProviderMeta[provider.MetaPodcastGUID] = guid
+		}
+		if published := f["podcast_published"]; published != "" {
+			t.ProviderMeta[provider.MetaPodcastPublished] = published
 		}
 	}
 	return t

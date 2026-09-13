@@ -1151,7 +1151,7 @@ func (m Model) renderPlaylist() string {
 			queueSuffix = fmt.Sprintf(" [Q%d]", queuePosition)
 		}
 		queueLen := lipgloss.Width(queueSuffix)
-		duration := formatTrackTime(t.DurationSecs)
+		duration := trackTrailer(t)
 		durationLen := lipgloss.Width(duration)
 		durationGap := 0
 		if duration != "" {
