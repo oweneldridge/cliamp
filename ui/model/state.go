@@ -152,6 +152,11 @@ type subsOverlay struct {
 	loading   bool
 	status    string
 	err       string
+	// addedAt is the playlist index of the first track this overlay added
+	// since it opened, or -1. Closing the overlay after an add moves focus
+	// there when the listener came from the provider pane, since the list is
+	// what they built.
+	addedAt int
 }
 
 // plManagerState holds state for the playlist manager overlay.

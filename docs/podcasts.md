@@ -98,6 +98,10 @@ drops the queue, while this overlay adds to what you already have.
 `l` and `L` pick the newest episode by `podcast.published` when a feed supplies
 dates, falling back to feed order.
 
+`Esc` closes the overlay. When it added tracks and you opened it from the
+provider list, focus moves to the playlist, on the first track it added, so
+`Enter` plays an episode rather than opening the provider row under the cursor.
+
 ## Subscriptions
 
 Press `f` on a show in the provider list, category show list, or `Ctrl+F` results

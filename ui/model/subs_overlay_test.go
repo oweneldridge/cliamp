@@ -119,6 +119,77 @@ func TestOpenSubsOverlayKeepsInFlightLoad(t *testing.T) {
 	}
 }
 
+// Starting on the Podcasts provider leaves focus in the provider pane. After
+// L fills the list, closing the overlay must land on that list, not back on
+// the provider rows, where Enter would open "Browse Categories".
+func TestCloseSubsOverlayFocusesTheListItFilled(t *testing.T) {
+	m := stubSubsModel()
+	m.provider.(*subProv).episodes = map[string][]playlist.Track{
+		"feed-a": {published("a", "2026-09-10")},
+		"feed-b": {published("b", "2026-09-11")},
+		"feed-c": {published("c", "2026-09-12")},
+	}
+	m.focus = focusProvider
+	m.openSubsOverlay()
+	cmd := m.loadLatestFromAllSubscriptions()
+	if cmd == nil {
+		t.Fatal("no sweep command")
+	}
+	m.addLatestSweep(cmd().(subsLatestAllMsg))
+	if m.playlist.Len() == 0 {
+		t.Fatal("the sweep added nothing")
+	}
+
+	m.closeSubsOverlay()
+
+	if m.subs.visible {
+		t.Error("overlay still visible")
+	}
+	if m.focus != focusPlaylist {
+		t.Errorf("focus = %v, want the playlist", m.focus)
+	}
+	if m.plCursor != 0 {
+		t.Errorf("plCursor = %d, want the first added track", m.plCursor)
+	}
+}
+
+// A look at the overlay that adds nothing leaves focus where it was.
+func TestCloseSubsOverlayWithoutAddsKeepsFocus(t *testing.T) {
+	m := stubSubsModel()
+	m.focus = focusProvider
+	m.openSubsOverlay()
+
+	m.closeSubsOverlay()
+
+	if m.focus != focusProvider {
+		t.Errorf("focus = %v, want the provider pane untouched", m.focus)
+	}
+}
+
+// Adds land after existing tracks; the cursor goes to the first new one.
+func TestCloseSubsOverlayCursorOnFirstAddedTrack(t *testing.T) {
+	m := stubSubsModel()
+	m.provider.(*subProv).episodes = map[string][]playlist.Track{"feed-a": {published("ep", "2026-09-10")}}
+	m.playlist.Replace([]playlist.Track{{Path: "/old.mp3", Title: "Old"}})
+	m.focus = focusProvider
+	m.openSubsOverlay()
+	cmd := m.loadSubscription(subsLoadAppend)
+	if cmd == nil {
+		t.Fatal("no load command")
+	}
+	msg := cmd().(subsEpisodesMsg)
+	m.addSubscriptionEpisodes(msg.tracks, msg.mode, msg.name)
+	if m.playlist.Len() < 2 {
+		t.Fatalf("playlist = %d tracks, want the old one plus the show's", m.playlist.Len())
+	}
+
+	m.closeSubsOverlay()
+
+	if m.focus != focusPlaylist || m.plCursor != 1 {
+		t.Errorf("focus = %v, plCursor = %d; want the playlist at the first added track (1)", m.focus, m.plCursor)
+	}
+}
+
 func TestOpenSubsOverlayWithoutSubscriptions(t *testing.T) {
 	m := &Model{provider: &subProv{}, playlist: playlist.New()}
 

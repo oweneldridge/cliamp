@@ -52,8 +52,31 @@ func (m *Model) openSubsOverlay() bool {
 		loader:  subscriptionLoader(sl),
 		loading: m.subs.loading,
 		status:  m.subs.status,
+		addedAt: -1,
 	}
 	return true
+}
+
+// closeSubsOverlay hides the overlay. When it added tracks and the listener
+// was in the provider pane, focus moves to the playlist, on the first added
+// track: the provider list is not where the next key belongs.
+func (m *Model) closeSubsOverlay() {
+	m.subs.visible = false
+	if m.subs.addedAt < 0 || m.focus != focusProvider || m.playlist.Len() == 0 {
+		return
+	}
+	m.focus = focusPlaylist
+	m.plCursor = min(m.subs.addedAt, m.playlist.Len()-1)
+	m.recomputeLayout()
+	m.adjustScroll()
+}
+
+// noteSubsAdded records the first index the open overlay added tracks at.
+// Adds from the provider list, with the overlay closed, are not its doing.
+func (m *Model) noteSubsAdded(start int) {
+	if m.subs.visible && m.subs.addedAt < 0 {
+		m.subs.addedAt = start
+	}
 }
 
 // subscriptionLoader returns the provider that owns a subscription list as an
@@ -153,7 +176,7 @@ func (m *Model) handleSubsKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "L":
 		return m.loadLatestFromAllSubscriptions()
 	case "esc", "F":
-		m.subs.visible = false
+		m.closeSubsOverlay()
 	}
 	return nil
 }
@@ -195,6 +218,7 @@ func (m *Model) addSubscriptionEpisodes(tracks []playlist.Track, mode subsLoadMo
 	m.playlist.Add(tracks...)
 	m.loadedPlaylist = ""
 	m.addToHeaderState(tracks)
+	m.noteSubsAdded(start)
 
 	switch mode {
 	case subsLoadQueue:
@@ -219,7 +243,7 @@ func (m *Model) appendSubscriptionTracks(tracks []playlist.Track, mode subsLoadM
 		return nil
 	}
 	if mode == subsLoadPlay {
-		m.subs.visible = false
+		m.closeSubsOverlay()
 		m.playlist.SetIndex(start)
 		m.plCursor = start
 		m.adjustScroll()
